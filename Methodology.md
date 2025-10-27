@@ -87,7 +87,7 @@ A virtual machine will be used to host the DNS server implementation:
 
 ### Understanding BIND9 and DNS-Based Blocking
 
-BIND9 (Berkeley Internet Name Domain version 9) is DNS server software that translates website names into IP addresses. It acts like a phone book for the internet - when you type "google.com" into your browser, BIND9 looks up and returns Google's actual IP address so your computer knows where to connect.
+BIND9 (Berkeley Internet Name Domain version 9) is DNS server software that translates website names into IP addresses. It acts like a phone book for the internet, when you type "google.com" into your browser, BIND9 looks up and returns Google's actual IP address so your computer knows where to connect.
 
 #### How Normal DNS Works
 
@@ -98,7 +98,7 @@ BIND9 (Berkeley Internet Name Domain version 9) is DNS server software that tran
 
 #### Why BIND9 is Needed for This Project
 
-BIND9 supports Response Policy Zones (RPZ), which is critical for implementing DNS-based phishing protection. RPZ allows you to create custom rules for how DNS queries are answered - you can tell BIND9 "If someone asks for badphishingsite.com, don't give them the real IP - block it instead."
+BIND9 supports Response Policy Zones (RPZ), which is critical for implementing DNS-based phishing protection. RPZ allows you to create custom rules for how DNS queries are answered, you can tell BIND9 "If someone asks for badphishingsite.com, don't give them the real IP, block it instead."
 
 #### How BIND9 + RPZ Blocks Phishing Sites
 
@@ -157,7 +157,7 @@ The process of setting up the DNS server will follow these general steps:
 The BIND9 setup will consist of several key components:
 
 1. **Main Config File** (`named.conf`): Tells BIND9 how to operate, what zones to load, and where to find RPZ rules
-2. **RPZ Zone File**: Contains the actual blocklist - the phishing domains to block
+2. **RPZ Zone File**: Contains the actual blocklist and the phishing domains to block
 3. **Logging Configuration**: Records all DNS queries to track what's being blocked
 4. **Upstream DNS Settings**: Configures which external DNS servers BIND9 forwards legitimate queries to
 
@@ -306,7 +306,7 @@ The success of the RPZ implementation will be measured using the following crite
 
 ## Limitations and Considerations
 
-Several limitations are acknowledged at this stage:
+Several limitations are:
 
 - The experiment uses known phishing domains rather than zero-day phishing sites
 - Testing is conducted in a controlled VM environment on the school network
