@@ -125,7 +125,60 @@ The blocking workflow works as follows:
                                            real IP address
 ```
 
-#### Blocking Example Comparison
+## Virtual Machine Requirements
+
+### VM Specifications Request
+
+For this project, three virtual machines will be requested from the school's Proxmox infrastructure to create a testing environment for DNS-based phishing protection.
+
+#### VM #1: DNS Server (Ubuntu Server)
+
+**Purpose**: Host the BIND9 DNS server with RPZ configuration for phishing domain blocking
+
+**Specifications**:
+- **Operating System**: Ubuntu Server 22.04 LTS or newer
+- **CPU**: 2-4 vCPUs
+- **RAM**: 4GB
+- **Storage**: 20GB
+- **Network**: 1 network interface with static IP capability
+
+**Justification**: The DNS server is the core of this project and needs sufficient resources to handle DNS queries from multiple clients, maintain large blocklists in memory, and log all DNS activity. BIND9 is relatively lightweight, but enough RAM ensures smooth operation when loading thousands of phishing domains into the RPZ zone. The storage requirement accounts for the OS, BIND9 installation, blocklist files, and DNS query logs generated during testing.
+
+#### VM #2: Client Machine 1 (Windows 10/11)
+
+**Purpose**: Primary test client for simulating end-user browsing behavior and testing phishing site blocking
+
+**Specifications**:
+- **Operating System**: Windows 10 or Windows 11
+- **CPU**: 2 vCPUs
+- **RAM**: 4GB
+- **Storage**: 40GB
+- **Network**: 1 network interface configured to use DNS Server VM
+
+**Justification**: This VM simulates a typical user workstation and will be used to test whether phishing sites are successfully blocked while legitimate sites remain accessible. The 40GB storage accommodates the Windows OS and multiple browser installations.
+
+#### VM #3: Client Machine 2 (Windows 10/11)
+
+**Purpose**: Secondary test client for validating consistency of DNS blocking across multiple machines
+
+**Specifications**:
+- **Operating System**: Windows 10 or Windows 11
+- **CPU**: 2 vCPUs
+- **RAM**: 4GB
+- **Storage**: 40GB
+- **Network**: 1 network interface configured to use DNS Server VM
+
+**Justification**: Having a second client VM is essential for verifying that DNS blocking works consistently across different machines and isn't dependent on a single client configuration. This VM will run the same tests as Client Machine 1 to ensure reproducible results. Testing from multiple clients also simulates a more realistic scenario where a DNS server handles requests from multiple users simultaneously, allowing for performance and scalability assessment.
+
+#### Network Configuration Requirements
+
+All three VMs should be placed on the same network segment within the Proxmox environment to ensure:
+- Low latency communication between clients and DNS server
+- Easy configuration of static IP addressing
+- Isolated testing environment 
+- Ability for the DNS server to forward queries to external upstream DNS servers 
+
+### Blocking Example Comparison
 
 **Without RPZ (Pretest):**
 ```
