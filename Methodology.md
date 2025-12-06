@@ -2,16 +2,15 @@
 
 ## Overview
 
-This project implements a comprehensive three-layer anti-phishing protection system combining browser-level detection, network-level blocking, and centralized security monitoring. The system integrates a Chrome extension for real-time email protection, DNS-based blocking using Response Policy Zones (RPZ), and SIEM logging for security event management. A controlled before-and-after comparison study will evaluate the effectiveness of each protection layer independently and as an integrated defense-in-depth system.
-
+This project implements a three-layer anti-phishing protection system combining browser-level detection, network-level blocking, and centralized security monitoring. The system uses a Chrome extension for real-time email protection, DNS-based blocking using Response Policy Zones (RPZ), and SIEM logging for security event management. A controlled before-and-after comparison study will evaluate the effectiveness of each protection layer independently.
 ## Experimental Design
 
-The experiment follows a classic pretest-posttest design with three distinct protection layers that can be evaluated both independently and as an integrated system. This methodology allows for quantitative measurement of each layer's effectiveness while assessing the overall protection coverage of the multi-layered approach.
+The experiment follows a classic pretest-posttest design with three distinct protection layers that can be evaluated both independently and as an integrated system. This methodology allows for measurement of each layer's effectiveness while assessing the overall protection coverage of the multi-layered approach.
 
 ### Three-Layer Architecture
 
 **Layer 1: Browser-Level Protection (Chrome Extension)**
-- Real-time URL analysis in web email interfaces (Gmail, Outlook, Yahoo Mail)
+- Real-time URL analysis in web email interfaces (Gmail)
 - Local PhishFort blocklist cache for fast lookups
 - Google Safe Browsing API integration for ML-enhanced detection
 - Visual warning system to alert users before clicking malicious links
@@ -71,7 +70,6 @@ The experiment follows a classic pretest-posttest design with three distinct pro
     |--> Test legitimate sites (should work normally)
     |--> Measure DNS resolution times with both layers active
     |--> Simulate user bypass attempts (ignore extension warnings)
-    |--> Test cross-browser consistency (Chrome, Edge)
     |--> Collect SIEM logs from both layers
     |--> Analyze which layer caught which threats
     |
@@ -119,7 +117,7 @@ The experiment follows a classic pretest-posttest design with three distinct pro
 - **Purpose:** Secondary testing to verify consistency across multiple machines
 - **OS:** Windows 10/11
 - **Resources:** 2 vCPUs, 4GB RAM, 40GB storage
-- **Software:** Chrome and Edge browsers for cross-browser testing
+- **Software:** Chrome
 - **DNS Configuration:** Points to VM #1 for DNS resolution
 - **Justification:** Validates that protection works consistently across different client configurations
 
@@ -267,7 +265,7 @@ async function checkURL(url) {
 
 **2. Legitimate Domain Baseline**
 - 50-100 popular legitimate websites:
-  - Email providers (gmail.com, outlook.com, yahoo.com)
+  - Email providers (gmail.com)
   - Banking sites (major US banks)
   - E-commerce (amazon.com, ebay.com)
   - Social media (facebook.com, twitter.com, linkedin.com)
@@ -339,14 +337,6 @@ async function checkURL(url) {
 - Log analysis of user interactions with warnings
 - Documentation of any reported issues
 
-### Cross-Browser Consistency
-
-**Chrome vs Edge Testing**
-- Verify extension works on Chromium-based browsers
-- Confirm DNS blocking works regardless of browser
-- Test warning display consistency
-- Validate logging works correctly on both browsers
-
 ## Pretest Phase
 
 ### Environment Setup
@@ -361,7 +351,7 @@ async function checkURL(url) {
 
 2. **Client Configuration**
    - Install Windows 10/11 on VM #2 and VM #3
-   - Install Chrome browser (and Edge on VM #3)
+   - Install Chrome browser
    - Configure DNS settings to point to VM #1
    - Verify network connectivity and DNS resolution
    - Install Chrome extension in "disabled" mode
@@ -405,7 +395,7 @@ async function checkURL(url) {
 
 1. **Core Functionality Implementation**
    - Build Manifest V3 extension structure
-   - Implement URL interception for Gmail, Outlook, Yahoo Mail
+   - Implement URL interception for Gmail)
    - Create warning overlay UI components
    - Develop local blocklist cache system
    - Build logging module for SIEM integration
