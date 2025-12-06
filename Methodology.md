@@ -1,371 +1,535 @@
-# Methodology Draft
+# Methodology - Multi-Layered Anti-Phishing System
 
 ## Overview
 
-A controlled before-and-after comparison study will be conducted to evaluate the effectiveness of DNS-based phishing protection using Response Policy Zones (RPZ). This experiment will measure whether implementing RPZ with phishing blocklists can successfully prevent access to known phishing domains while maintaining normal access to legitimate websites. The following sections provide an outline of the methodology that will be expanded and refined during subsequent progress reports.
+This project implements a comprehensive three-layer anti-phishing protection system combining browser-level detection, network-level blocking, and centralized security monitoring. The system integrates a Chrome extension for real-time email protection, DNS-based blocking using Response Policy Zones (RPZ), and SIEM logging for security event management. A controlled before-and-after comparison study will evaluate the effectiveness of each protection layer independently and as an integrated defense-in-depth system.
 
 ## Experimental Design
 
-The experiment follows a classic pretest–posttest design where measurements are taken before and after implementing the DNS-based blocking system. This allows for direct comparison of the system's effectiveness by observing changes in phishing site accessibility and overall network performance.
+The experiment follows a classic pretest-posttest design with three distinct protection layers that can be evaluated both independently and as an integrated system. This methodology allows for quantitative measurement of each layer's effectiveness while assessing the overall protection coverage of the multi-layered approach.
 
-### Experimental Flow Diagram
+### Three-Layer Architecture
+
+**Layer 1: Browser-Level Protection (Chrome Extension)**
+- Real-time URL analysis in web email interfaces (Gmail, Outlook, Yahoo Mail)
+- Local PhishFort blocklist cache for fast lookups
+- Google Safe Browsing API integration for ML-enhanced detection
+- Visual warning system to alert users before clicking malicious links
+- Event logging to SIEM for monitoring and analysis
+
+**Layer 2: Network-Level Protection (DNS/RPZ)**
+- BIND9 DNS server with Response Policy Zones configuration
+- PhishFort blocklists converted to RPZ zone format
+- Network-wide domain blocking (catches bypass attempts)
+- Secondary defense layer if users ignore browser warnings
+- Event logging to SIEM for comprehensive coverage tracking
+
+**Layer 3: Monitoring and Analysis (SIEM)**
+- Syslog-based logging infrastructure (with potential ELK Stack upgrade for visualization)
+- Aggregates detection events from both Chrome extension and DNS server
+- Correlates phishing attempts across protection layers
+- Provides results on effectiveness of each layer
+- Dashboard visualization of threat patterns and system performance
+
+### Experimental Flow
 
 ```
-[Pretest Phase]
+[Pretest Phase - Baseline]
     |
-    |--> Setup DNS Server (no RPZ)
-    |--> Configure Client VMs
-    |--> Test phishing site access (baseline)
-    |--> Test legitimate site access
-    |--> Measure DNS performance
-    |--> Record all data
+    |--> Setup infrastructure (3 VMs, Chrome extension, SIEM)
+    |--> Configure DNS server WITHOUT RPZ blocking
+    |--> Deploy Chrome extension WITHOUT detection enabled
+    |--> Test access to known phishing domains (baseline - should work)
+    |--> Test access to legitimate sites (baseline)
+    |--> Measure DNS resolution times (baseline)
+    |--> Record all baseline results
     |
     v
-[Treatment Phase]
+[Treatment Phase - Layer 1: Chrome Extension]
+    |
+    |--> Enable Chrome extension phishing detection
+    |--> Load PhishFort blocklist into extension cache
+    |--> Integrate Google Safe Browsing API
+    |--> Configure extension → SIEM logging
+    |--> Test phishing domain detection in browser
+    |--> Verify warning displays work correctly
+    |
+    v
+[Treatment Phase - Layer 2: DNS/RPZ]
     |
     |--> Download PhishFort blocklists
-    |--> Configure RPZ on BIND9
-    |--> Import phishing domains to RPZ zone
-    |--> Enable blocking mechanism
-    |--> Verify blocking works
+    |--> Configure BIND9 RPZ zones
+    |--> Import phishing domains to RPZ
+    |--> Enable DNS-level blocking
+    |--> Configure DNS → SIEM logging
+    |--> Verify network-level blocking functions
     |
     v
-[Post-test Phase]
+[Post-test Phase - Integrated System]
     |
-    |--> Retest phishing site access (should be blocked)
-    |--> Retest legitimate site access (should work)
-    |--> Remeasure DNS performance
-    |--> Collect user feedback
-    |--> Compare pretest vs post-test data
+    |--> Test known phishing domains (should be blocked by Layer 1 or 2)
+    |--> Test legitimate sites (should work normally)
+    |--> Measure DNS resolution times with both layers active
+    |--> Simulate user bypass attempts (ignore extension warnings)
+    |--> Test cross-browser consistency (Chrome, Edge)
+    |--> Collect SIEM logs from both layers
+    |--> Analyze which layer caught which threats
+    |
+    v
+[Real-World Testing Phase]
+    |
+    |--> Deploy to 2 on-campus friends
+    |--> Monitor normal browsing activity for defined period
+    |--> Collect user feedback on false positives
+    |--> Gather usability feedback
+    |--> Document any issues or edge cases
     |
     v
 [Analysis & Reporting]
+    |
+    |--> Compare pretest vs post-test results
+    |--> Calculate block rate for each layer
+    |--> Measure false positive rates
+    |--> Analyze performance overhead
+    |--> Evaluate defense-in-depth effectiveness
+    |--> Document findings and create implementation guide
 ```
 
 ## Experimental Environment
 
-A controlled network environment will be established using virtual machines to safely test phishing protection mechanisms:
+### Virtual Machine Infrastructure
 
-### Network Topology
+**VM #1: DNS Server (Ubuntu Server)**
+- **Purpose:** Host BIND9 DNS server with RPZ configuration and SIEM logging
+- **OS:** Ubuntu Server 22.04 LTS
+- **Resources:** 2-4 vCPUs, 4GB RAM, 20GB storage
+- **Software:** BIND9, rsyslog for SIEM integration, monitoring tools
+- **Network:** Static IP on isolated lab network
+- **Justification:** Sufficient resources to handle DNS queries, large RPZ blocklists in memory, and logging operations
 
+**VM #2: Windows Client 1 (Primary Test System)**
+- **Purpose:** Primary testing platform for Chrome extension and integrated system evaluation
+- **OS:** Windows 10/11
+- **Resources:** 2 vCPUs, 4GB RAM, 40GB storage
+- **Software:** Chrome browser, testing tools
+- **DNS Configuration:** Points to VM #1 for DNS resolution
+- **Justification:** Simulates typical end-user workstation for realistic testing scenarios
+
+**VM #3: Windows Client 2 (Validation System)**
+- **Purpose:** Secondary testing to verify consistency across multiple machines
+- **OS:** Windows 10/11
+- **Resources:** 2 vCPUs, 4GB RAM, 40GB storage
+- **Software:** Chrome and Edge browsers for cross-browser testing
+- **DNS Configuration:** Points to VM #1 for DNS resolution
+- **Justification:** Validates that protection works consistently across different client configurations
+
+All VMs deployed on school's Proxmox infrastructure with isolated network segment for controlled testing.
+
+### Chrome Extension Architecture
+
+**Technology Stack:**
+- Manifest V3 (latest Chrome extension standard)
+- JavaScript for core functionality
+- Chrome Web Request API for URL interception
+- Chrome Storage API for local blocklist cache
+- Fetch API for Google Safe Browsing integration
+
+**Key Components:**
+1. **Background Service Worker:** Monitors email interfaces and intercepts URL clicks
+2. **Content Scripts:** Inject warning overlays into email web pages
+3. **Local Blocklist Cache:** PhishFort domains stored locally for fast lookup
+4. **API Integration:** Queries Google Safe Browsing for unknown URLs
+5. **Logging Module:** Sends detection events to SIEM server
+
+**Detection Workflow:**
 ```
-                    [School Network]
-                          |
-         _________________|_________________
-        |                 |                 |
-        |                 |                 |
-   [DNS Server VM]   [Client VM 1]    [Client VM 2]
-   Ubuntu Server     Windows 10/11    Windows 10/11
-   BIND9 + RPZ       Chrome/Firefox   Chrome/Firefox/Edge
-   Static IP         |                |
-        |            |                |
-        |____________|________________|
-                     |
-              DNS Queries Flow
-                Through Here
-                     |
-                     v
-           [Internet/Upstream DNS]
-           Google DNS (8.8.8.8)
-           Cloudflare (1.1.1.1)
-
-
-[On-Campus Friend 1]  [On-Campus Friend 2]
-Personal Laptop       Personal Desktop
-Configured to use --> [DNS Server VM]
-test DNS server
-```
-
-### DNS Server Setup
-
-A virtual machine will be used to host the DNS server implementation:
-
-- **Virtual Machine**: A VM will be borrowed from the school's resources to host the DNS server. The specific hypervisor platform (VMware, VirtualBox, Proxmox, etc.) will be documented once access is obtained.
-- **Operating System**: Ubuntu Server LTS (latest stable version) will be installed on the VM. The exact version will be specified during implementation.
-- **Resource Allocation**: Initial estimates suggest 2-4 CPU cores, 4-8GB RAM, and 20-50GB storage will be sufficient. These specifications will be adjusted based on performance during testing.
-- **Network Configuration**: The VM will be configured with a static IP address on the school network to allow client connections. Details on network bridging or NAT configuration will be provided in progress reports.
-
-### Understanding BIND9 and DNS-Based Blocking
-
-BIND9 (Berkeley Internet Name Domain version 9) is DNS server software that translates website names into IP addresses. It acts like a phone book for the internet, when you type "google.com" into your browser, BIND9 looks up and returns Google's actual IP address so your computer knows where to connect.
-
-#### How Normal DNS Works
-
-1. **You type a URL**: You enter "amazon.com" in your browser
-2. **DNS query**: Your computer asks a DNS server "What's the IP address for amazon.com?"
-3. **DNS response**: The DNS server responds with the IP address
-4. **Connection**: Your browser uses that IP address to connect to Amazon's servers
-
-#### Why BIND9 is Needed for This Project
-
-BIND9 supports Response Policy Zones (RPZ), which is critical for implementing DNS-based phishing protection. RPZ allows you to create custom rules for how DNS queries are answered, you can tell BIND9 "If someone asks for badphishingsite.com, don't give them the real IP, block it instead."
-
-#### How BIND9 + RPZ Blocks Phishing Sites
-
-The blocking workflow works as follows:
-
-1. **Normal DNS query**: User's browser asks the BIND9 server "What's the IP for legitbank-login.phishing.com?"
-2. **RPZ check**: Before responding, BIND9 checks its RPZ zone file (the blocklist)
-3. **Match found**: The domain is on the phishing blocklist
-4. **Block response**: Instead of returning the real IP address, BIND9 returns NXDOMAIN (pretends the site doesn't exist), a redirect to a warning page, or a localhost address that goes nowhere
-5. **Result**: The user never reaches the phishing site
-
-#### System Architecture
-
-```
-[Client VM] ---DNS Query---> [BIND9 Server with RPZ] ---Check Blocklist--->
-                                      |
-                                      |
-                              Is domain blocked?
-                                      |
-                        Yes /                  \ No
-                           /                    \
-                    Return NXDOMAIN         Forward query to
-                    or warning page         upstream DNS, return
-                                           real IP address
+User clicks link in email
+    ↓
+Content script intercepts click
+    ↓
+Background worker checks local cache
+    ↓
+If not in cache → Query Google Safe Browsing API
+    ↓
+Calculate threat score
+    ↓
+If malicious → Display warning overlay + Log to SIEM
+If safe → Allow navigation + Log to SIEM
 ```
 
-## Virtual Machine Requirements
+### DNS/RPZ Configuration
 
-### VM Specifications Request
+**BIND9 Setup:**
+- Latest stable BIND9 version on Ubuntu Server
+- RPZ zones configured for phishing domain blocking
+- Forwarding to upstream DNS (Google DNS 8.8.8.8, Cloudflare 1.1.1.1) for legitimate queries
+- Query logging enabled for SIEM integration
+- Performance monitoring for resolution time analysis
 
-For this project, three virtual machines will be requested from the school's Proxmox infrastructure to create a testing environment for DNS-based phishing protection.
-
-#### VM #1: DNS Server (Ubuntu Server)
-
-**Purpose**: Host the BIND9 DNS server with RPZ configuration for phishing domain blocking
-
-**Specifications**:
-- **Operating System**: Ubuntu Server 22.04 LTS or newer
-- **CPU**: 2-4 vCPUs
-- **RAM**: 4GB
-- **Storage**: 20GB
-- **Network**: 1 network interface with static IP capability
-
-**Justification**: The DNS server is the core of this project and needs sufficient resources to handle DNS queries from multiple clients, maintain large blocklists in memory, and log all DNS activity. BIND9 is relatively lightweight, but enough RAM ensures smooth operation when loading thousands of phishing domains into the RPZ zone. The storage requirement accounts for the OS, BIND9 installation, blocklist files, and DNS query logs generated during testing.
-
-#### VM #2: Client Machine 1 (Windows 10/11)
-
-**Purpose**: Primary test client for simulating end-user browsing behavior and testing phishing site blocking
-
-**Specifications**:
-- **Operating System**: Windows 10 or Windows 11
-- **CPU**: 2 vCPUs
-- **RAM**: 4GB
-- **Storage**: 40GB
-- **Network**: 1 network interface configured to use DNS Server VM
-
-**Justification**: This VM simulates a typical user workstation and will be used to test whether phishing sites are successfully blocked while legitimate sites remain accessible. The 40GB storage accommodates the Windows OS and multiple browser installations.
-
-#### VM #3: Client Machine 2 (Windows 10/11)
-
-**Purpose**: Secondary test client for validating consistency of DNS blocking across multiple machines
-
-**Specifications**:
-- **Operating System**: Windows 10 or Windows 11
-- **CPU**: 2 vCPUs
-- **RAM**: 4GB
-- **Storage**: 40GB
-- **Network**: 1 network interface configured to use DNS Server VM
-
-**Justification**: Having a second client VM is essential for verifying that DNS blocking works consistently across different machines and isn't dependent on a single client configuration. This VM will run the same tests as Client Machine 1 to ensure reproducible results. Testing from multiple clients also simulates a more realistic scenario where a DNS server handles requests from multiple users simultaneously, allowing for performance and scalability assessment.
-
-#### Network Configuration Requirements
-
-All three VMs should be placed on the same network segment within the Proxmox environment to ensure:
-- Low latency communication between clients and DNS server
-- Easy configuration of static IP addressing
-- Isolated testing environment 
-- Ability for the DNS server to forward queries to external upstream DNS servers 
-
-### Blocking Example Comparison
-
-**Without RPZ (Pretest):**
+**RPZ Zone Structure:**
 ```
-User: "What's the IP for evil-phishing-site.com?"
-BIND9: "It's 192.168.1.100"
-User: *visits phishing site*
+zone "rpz.phishing.local" {
+    type master;
+    file "/etc/bind/rpz/phishing-domains.db";
+};
 ```
 
-**With RPZ (Post-test):**
-```
-User: "What's the IP for evil-phishing-site.com?"
-BIND9: *checks blocklist* "That domain doesn't exist (NXDOMAIN)"
-User: *gets error page, can't visit phishing site*
-```
+**Blocklist Processing Pipeline:**
+1. Download PhishFort lists from GitHub
+2. Parse and validate domain formats
+3. Remove duplicates and whitelist false positives
+4. Convert to RPZ zone file format:
+   ```
+   evil-site.com CNAME .
+   phishing-domain.com CNAME .
+   ```
+5. Reload BIND9 to activate new rules
+6. Verify blocking with test queries
 
-### DNS Server Software Installation
+### SIEM Integration Architecture
 
-The process of setting up the DNS server will follow these general steps:
+**Logging Infrastructure:**
+- **Phase 1:** Syslog-based logging for rapid deployment
+- **Phase 2 (if time permits):** ELK Stack (Elasticsearch, Logstash, Kibana) for visualization
 
-- Install BIND9 on the Ubuntu Server VM
-- Configure basic DNS functionality and verify it can resolve standard domain queries
-- Configure BIND9 to forward queries for legitimate sites to upstream DNS servers (like Google DNS or Cloudflare)
-- Secure the DNS server with appropriate firewall rules and access controls
-- Test basic DNS resolution before implementing RPZ to ensure the foundation is working
-- Document all configuration files and settings for reproducibility
+**Log Sources:**
+1. **Chrome Extension Logs:**
+   - Timestamp, detected URL, threat score, API response, user action
+   - Format: JSON over HTTPS to syslog endpoint
+   
+2. **DNS Server Logs:**
+   - Timestamp, queried domain, client IP, RPZ action (block/allow), response time
+   - Format: BIND9 query logs parsed and forwarded to syslog
 
-#### BIND9 Configuration Components
-
-The BIND9 setup will consist of several key components:
-
-1. **Main Config File** (`named.conf`): Tells BIND9 how to operate, what zones to load, and where to find RPZ rules
-2. **RPZ Zone File**: Contains the actual blocklist and the phishing domains to block
-3. **Logging Configuration**: Records all DNS queries to track what's being blocked
-4. **Upstream DNS Settings**: Configures which external DNS servers BIND9 forwards legitimate queries to
-
-Specific commands, configuration file examples, and troubleshooting steps will be detailed as the implementation progresses.
-
-### Client Machine Setup
-
-Multiple client VMs will be used to simulate end-user environments:
-
-- **Client VMs**: Additional virtual machines will be borrowed from the school to serve as test clients
-- **Operating Systems**: Windows 10/11 will be installed on client VMs to represent typical user environments
-- **Browser Configuration**: Multiple browsers (Chrome, Firefox, Edge) will be installed for cross-browser testing
-- **DNS Configuration**: Client machines will be configured to point to the test DNS server for all domain resolution
-- **Network Isolation**: All VMs (DNS server and clients) will be on the same school network segment to minimize latency and ensure connectivity
-
-The number of client VMs and their specific configurations will be determined based on availability from the school and documented in progress reports.
+**SIEM Functionality:**
+- Centralized event aggregation from both protection layers
+- Correlation of multi-layer detections (same threat caught by both layers)
+- Real-time alerting for high-severity phishing attempts
+- Historical analysis of threat patterns
+- Performance results dashboard
+- False positive tracking and analysis
 
 ## Data Collection Sources
 
-### Blocklist Integration Process
+### Phishing Domain Blocklists
 
+**Primary Source: PhishFort GitHub Repository**
+- Actively maintained community-driven phishing database
+- Updated multiple times daily with new threats
+- Format: Plain text list of domains
+- URL: https://github.com/phishfort/phishfort-lists
+
+**Blocklist Integration Process:**
 ```
-[PhishFort GitHub Repo]
-    |
-    | Download phishing domain lists
-    v
-[Raw Data Files]
-    | .txt or .csv format
-    | Contains thousands of phishing domains
-    v
-[Processing Script]
-    | Parse and format domains
-    | Remove duplicates
-    | Validate domain format
-    v
-[RPZ Zone File Format]
-    | evil-site.com CNAME .
-    | phishing.com CNAME .
-    | fake-bank.com CNAME .
-    v
-[Import to BIND9]
-    | Load into RPZ configuration
-    | Activate blocking rules
-    v
-[Active Protection]
+[PhishFort GitHub] 
+    ↓ Download
+[Raw Domain Lists]
+    ↓ Process
+[Validation & Deduplication]
+    ↓ Split
+[Extension Cache]  [RPZ Zone File]
+    ↓                  ↓
+[Chrome Extension] [BIND9 Server]
 ```
 
-Three categories of domain lists will be compiled for testing:
+### Machine Learning Detection
 
-* **Phishing Blocklists**: PhishFort Lists from GitHub will serve as the primary source of known phishing domains. Additional blocklists may be incorporated if needed for comprehensive coverage.
-* **Test Phishing Domains**: A curated collection of verified phishing URLs (already taken down or sandboxed) will be used for safe testing without exposing systems to active threats.
-* **Legitimate Domain Baseline**: A list of 50-100 popular legitimate websites (e.g., Google, Amazon, banking sites, news outlets) will be compiled to test for false positives.
+**Google Safe Browsing API:**
+- Google's ML-trained phishing detection system
+- Checks URLs against constantly updated threat database
+- Returns threat classification and confidence scores
+- Free tier: 10,000 queries per day (sufficient for testing)
+- Provides zero-day protection for newly created phishing sites not yet in blocklists
 
-The exact number of domains in each category and the selection criteria will be detailed in progress reports.
+**API Integration:**
+```javascript
+// Simplified example
+async function checkURL(url) {
+    const response = await fetch('https://safebrowsing.googleapis.com/v4/threatMatches:find', {
+        method: 'POST',
+        body: JSON.stringify({
+            threatInfo: {
+                threatTypes: ["SOCIAL_ENGINEERING"],
+                threatEntries: [{"url": url}]
+            }
+        })
+    });
+    return response.json();
+}
+```
+
+### Testing Domain Categories
+
+**1. Known Phishing Domains (from PhishFort)**
+- Verified malicious domains for controlled testing
+- Already taken down or sandboxed for safe testing
+- Used to measure block rate effectiveness
+
+**2. Legitimate Domain Baseline**
+- 50-100 popular legitimate websites:
+  - Email providers (gmail.com, outlook.com, yahoo.com)
+  - Banking sites (major US banks)
+  - E-commerce (amazon.com, ebay.com)
+  - Social media (facebook.com, twitter.com, linkedin.com)
+  - News outlets (cnn.com, nytimes.com, wsj.com)
+- Used to measure false positive rate
+
+**3. Edge Case Domains**
+- Newly registered domains (test ML detection)
+- Typosquatting examples (g00gle.com, paypa1.com)
+- URL shorteners (bit.ly, tinyurl.com)
+- International domains with IDN homographs
+
+## Evaluation Results
+
+### Primary Results
+
+**Block Rate (Target: >95%)**
+- Percentage of known phishing domains successfully blocked
+- Measured separately for:
+  - Layer 1 (Chrome extension) block rate
+  - Layer 2 (DNS/RPZ) block rate  
+  - Combined system block rate
+- Formula: (Blocked Domains / Total Phishing Domains Tested) × 100
+
+**False Positive Rate (Target: <1%)**
+- Percentage of legitimate sites incorrectly blocked or flagged
+- Critical for usability and user trust
+- Formula: (False Positives / Total Legitimate Sites Tested) × 100
+
+**Detection Layer Analysis**
+- Which layer catches threats first (extension vs DNS)
+- Percentage caught by Layer 1 only
+- Percentage caught by Layer 2 only
+- Percentage caught by both layers (redundancy measure)
+
+### Performance results
+
+**DNS Resolution Time**
+- Average query response time before RPZ implementation
+- Average query response time after RPZ implementation
+- Performance overhead calculation
+- Target: <50ms additional latency
+
+**Extension Response Time**
+- Time from URL click to warning display (target: <200ms)
+- API query latency to Google Safe Browsing
+- Local cache hit rate (should be >80% after initial population)
+
+**System Resource Usage**
+- DNS server CPU and memory utilization
+- Chrome extension memory footprint
+- Network bandwidth for API queries and SIEM logging
+
+### User Experience results
+
+**Real-World Testing (2 On-Campus Friends)**
+- Deployment duration: 1-2 weeks per friend
+- Data collected:
+  - Number of warnings displayed
+  - False positive reports
+  - Legitimate blocks (actual phishing attempts caught)
+  - User feedback on warning clarity and usefulness
+  - Performance perception (does browsing feel slower?)
+  - Usability issues or edge cases discovered
+
+**Feedback Collection Methods:**
+- Post-deployment survey
+- Informal interviews about user experience
+- Log analysis of user interactions with warnings
+- Documentation of any reported issues
+
+### Cross-Browser Consistency
+
+**Chrome vs Edge Testing**
+- Verify extension works on Chromium-based browsers
+- Confirm DNS blocking works regardless of browser
+- Test warning display consistency
+- Validate logging works correctly on both browsers
 
 ## Pretest Phase
 
-Before implementing any blocking mechanisms, baseline measurements will be established:
-
 ### Environment Setup
-- Install and configure the DNS server on the borrowed VM without RPZ enabled
-- Set up client VMs and configure them to use the test DNS server
-- Verify connectivity and proper DNS resolution across all client machines
-- Document initial system configurations and network settings
+
+1. **DNS Server Configuration**
+   - Install Ubuntu Server 22.04 on VM #1
+   - Install BIND9 without RPZ zones configured
+   - Configure basic DNS forwarding to upstream servers
+   - Set static IP address
+   - Verify basic DNS resolution works
+   - Take VM snapshot: "Clean BIND9 - Pre-RPZ"
+
+2. **Client Configuration**
+   - Install Windows 10/11 on VM #2 and VM #3
+   - Install Chrome browser (and Edge on VM #3)
+   - Configure DNS settings to point to VM #1
+   - Verify network connectivity and DNS resolution
+   - Install Chrome extension in "disabled" mode
+   - Take VM snapshots: "Windows Client - Baseline"
+
+3. **SIEM Setup**
+   - Configure rsyslog on DNS server
+   - Set up log collection directory
+   - Test basic logging functionality
+   - Document baseline log format
 
 ### Baseline Measurements
-- Test access to the curated list of known phishing domains from client VMs to confirm they are currently reachable (using safe, inactive phishing URLs)
-- Measure and record DNS resolution times for both legitimate and phishing domains
-- Document the success rate of accessing each category of websites from multiple client machines
-- Record baseline network latency and performance metrics
-- Verify that all legitimate websites in the test set load correctly without issues across different browsers
 
-### Data Recording
-- Create spreadsheets or databases to log all test results from each client VM
-- Establish a standardized testing procedure that can be replicated in the post-test phase
-- Take screenshots or recordings of access attempts for documentation
-- Test from multiple client VMs to ensure consistency
+**DNS Performance Baseline**
+- Use `dig` command to measure resolution times
+- Test 100 queries to popular domains
+- Record: min, max, average, median response times
+- Establish baseline before any blocking is enabled
 
-The specific tools used for measurement (e.g., dig, nslookup, custom scripts) will be determined and documented during implementation.
+**Phishing Domain Accessibility Test**
+- Attempt to access 50 known phishing domains (from safe/inactive list)
+- All should resolve and be accessible (this is baseline)
+- Document which domains resolve successfully
+- Record DNS query times for these domains
 
-## Treatment Phase
+**Legitimate Site Access Test**
+- Access all 50-100 legitimate baseline domains
+- Verify all load correctly
+- Document any that fail (pre-existing issues)
+- Record load times and DNS resolution times
 
-The treatment consists of implementing and activating RPZ-based phishing protection:
+**Extension Disabled Baseline**
+- With extension disabled, click email links
+- No warnings should appear (baseline behavior)
+- Document normal user flow
+- Record click-to-page-load times
+
+## Treatment Phase - Layer 1 (Chrome Extension)
+
+### Extension Development and Deployment
+
+1. **Core Functionality Implementation**
+   - Build Manifest V3 extension structure
+   - Implement URL interception for Gmail, Outlook, Yahoo Mail
+   - Create warning overlay UI components
+   - Develop local blocklist cache system
+   - Build logging module for SIEM integration
+
+2. **PhishFort Integration**
+   - Download latest PhishFort blocklists
+   - Process and validate domain list
+   - Load into extension's local storage
+   - Implement cache refresh mechanism
+
+3. **Google Safe Browsing API Integration**
+   - Obtain API key from Google Cloud Console
+   - Implement API query function
+   - Add rate limiting and error handling
+   - Cache API responses to minimize queries
+
+4. **SIEM Logging Configuration**
+   - Configure extension to send logs to syslog endpoint
+   - Define log format and event types
+   - Test logging for all detection scenarios
+   - Verify logs appear in SIEM
+
+### Extension Testing
+
+- Deploy extension to both test VMs
+- Test phishing URL detection with known bad domains
+- Verify warning displays correctly
+- Test API fallback when domain not in cache
+- Confirm logs appear in SIEM
+- Measure response times (target: <200ms)
+
+## Treatment Phase - Layer 2 (DNS/RPZ)
 
 ### RPZ Configuration
-- Download and import phishing domain lists from PhishFort into a usable format
-- Configure the DNS server to implement Response Policy Zones according to ISC guidelines
-- Create RPZ zone files that include all phishing domains from the blocklists
-- Set the appropriate action for blocked domains (NXDOMAIN, redirect to warning page, etc.)
 
-### Policy Implementation
-- Apply the RPZ policy to the DNS server configuration
-- Restart or reload DNS services to activate the blocking mechanism
-- Verify that RPZ is functioning by testing a small sample of blocked domains from client VMs
+1. **Zone File Creation**
+   - Download PhishFort blocklists
+   - Convert to RPZ zone file format
+   - Add zone configuration to BIND9
+   - Validate syntax
 
-### Logging and Monitoring
-- Enable DNS query logging to track blocked requests from all client machines
-- Set up monitoring to capture both successful blocks and any potential false positives
-- Configure alerts for unusual DNS activity or system performance issues
+2. **RPZ Activation**
+   ```bash
+   # Example configuration in named.conf.local
+   response-policy { 
+       zone "rpz.phishing.local"; 
+   };
+   
+   zone "rpz.phishing.local" {
+       type master;
+       file "/etc/bind/rpz/phishing-domains.db";
+   };
+   ```
 
-The exact RPZ configuration syntax, file formats, and implementation details will be provided in subsequent progress reports as they are developed.
+3. **BIND9 Integration**
+   - Reload BIND9 configuration
+   - Verify RPZ is active with test queries
+   - Configure query logging
+   - Set up log forwarding to SIEM
 
-## Post-hoc Test Phase
+### DNS Testing
 
-Following the implementation of RPZ filtering, the same tests conducted in the pretest will be repeated:
+- Test phishing domain queries (should return NXDOMAIN)
+- Verify legitimate domains still resolve
+- Measure resolution time impact
+- Confirm logs appear in SIEM with correct format
+- Test from both Windows clients
+- Take snapshot: "RPZ Active - Full Blocking"
 
-### Replication of Pretest
-- Attempt to access the same set of phishing domains tested during the pretest from all client VMs
-- Test all legitimate websites to identify any that are incorrectly blocked
-- Measure DNS resolution times with RPZ active across different client machines
-- Document any error messages or blocking behaviors encountered
-- Test across multiple browsers on each client VM to ensure consistent blocking
+## Post-test Phase - Integrated System
 
-### Effectiveness Measurements
-- Calculate the percentage of phishing domains successfully blocked
-- Identify any phishing sites that bypassed the filter
-- Document false positive rate (legitimate sites blocked incorrectly)
-- Compare pre and post-treatment DNS resolution speeds
-- Assess overall impact on browsing experience from the client VMs
+### System Testing
 
-### On-Campus User Testing
-- Two friends on campus will be asked to configure their personal devices to use the test DNS server
-- They will use the DNS-based blocking during their normal browsing activities for a defined testing period
-- Feedback will be collected through informal interviews or surveys regarding their experience
-- Any issues, false positives, or performance concerns will be documented
-- This real-world usage will provide qualitative insights beyond the controlled VM testing
+**Multi-Layer Detection Verification**
+1. Test known phishing domains:
+   - Extension should display warning (Layer 1)
+   - If warning ignored, DNS should block (Layer 2)
+   - Both events should log to SIEM
+   - Calculate detection rate for each layer
 
-### Data Analysis
-- Compare pretest and post-test results to quantify the effectiveness of RPZ
-- Identify patterns in blocked vs. unblocked domains
-- Analyze any performance degradation caused by RPZ implementation
-- Incorporate qualitative feedback from the two on-campus testers into the evaluation
-- Compare results across different client VMs and browsers to identify any inconsistencies
+2. Test legitimate domains:
+   - No warnings from extension
+   - Normal DNS resolution
+   - Measure any false positives
+   - Log all access attempts
 
-## Evaluation Metrics
+3. Test edge cases:
+   - New domains not in blocklist (API catches via ML)
+   - URL shorteners
+   - Typosquatting domains
+   - International domains with special characters
 
-The success of the RPZ implementation will be measured using the following criteria:
+**Performance Analysis**
+- Measure DNS resolution times with full system active
+- Compare to baseline measurements
+- Calculate performance overhead
+- Test under load (rapid successive queries)
+- Verify extension doesn't slow browsing
 
-- **Block Rate**: Percentage of known phishing domains successfully blocked (target: >95%)
-- **False Positive Rate**: Percentage of legitimate sites incorrectly blocked (target: <1%)
-- **DNS Resolution Time**: Average time to resolve domain names, comparing before and after RPZ implementation
-- **System Performance**: Overall impact on network speed and browsing experience across client VMs
-- **Cross-Browser Consistency**: Verification that blocking works uniformly across Chrome, Firefox, and Edge
-- **User Feedback**: Qualitative assessment from on-campus testers regarding usability and effectiveness
-- **Scalability**: Assessment of whether the solution can handle multiple simultaneous client connections and the full blocklist without performance issues
+**SIEM Analysis**
+- Review aggregated logs from both layers
+- Identify correlation patterns (threats caught by both)
+- Calculate coverage statistics
+- Generate effectiveness reports
+- Create visualization dashboards (if ELK Stack implemented)
 
-## Limitations and Considerations
+## Real-World Testing Phase
 
-Several limitations are:
+### Friends and Family
 
-- The experiment uses known phishing domains rather than zero-day phishing sites
-- Testing is conducted in a controlled VM environment on the school network
-- The blocklist used may not include all possible phishing domains
-- Real-world user testing is limited to two on-campus volunteers
-- VM performance and network conditions may differ from production environments
-- Testing period for on-campus users will be limited by the semester timeline
+**Deployment Process:**
+1. Install Chrome extension on friends devices
+2. Configure DNS to use test server (if on campus network)
+3. Provide usage instructions and feedback form
+4. Monitor SIEM for events from friends laptops
+5. Weekly check-ins for feedback
+6. Duration: 1-2 weeks 
 
-These limitations will be addressed in more detail in the final methodology and discussion sections.
+**Data Collection:**
+- Number of phishing warnings displayed
+- Any false positives reported
+- Actual phishing attempts caught
+- User feedback on:
+  - Warning clarity and usefulness
+  - Perceived browsing speed
+  - Any usability issues
+  - Overall satisfaction
