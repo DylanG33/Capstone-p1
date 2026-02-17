@@ -1,7 +1,7 @@
 # Progress Report 5
 ## Overview
 
-This progress report documents the implementation of RPZ for DNS-based phishing protection. Building on the previous session's BIND9 installation, this session focused on downloading phishing blocklists, converting them to RPZ format, and successfully enabling network-level domain blocking.
+This progress report documents the implementation of RPZ for DNS-based phishing protection. Building on the previous session's BIND9 installation, this session focused on downloading phishing blocklists, converting them to RPZ format, and successfully enabling network-level domain blocking. Finally at the end, I've finsihed work on the manifest.json file which serves as the brain of the chrome extension.
 
 ---
 
@@ -164,6 +164,70 @@ dig @localhost 0000000000000000000000000000000000000.xyz
 ### 6. Proxmox Snapshot
 
 Created a snapshot to preserve the working RPZ configuration.
+
+### 7. Manifest.json
+
+Started the chrome extension for my project and am starting with the two most import files: manifest.json and the content.js
+
+The following is the manifest.json file and am starting work on the content,js (which the longest and most complicated)
+
+```
+{
+    "manifest_version": 3,
+    "name": "PhishBait",
+    "version": "1.0.0",
+    "description": "A browser-based phishing detection extension that scans email links for suspicious patterns. Developed as part of a multi-layered anti-phishing capstone project.",
+    "author": "Dylan George",
+    "permissions": [
+        "activeTab",
+        "storage"
+    ],
+    "host_permissions": [
+        "*://mail.google.com/*",
+        "*://outlook.live.com/*",
+        "*://outlook.office.com/*"
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "*://mail.google.com/*",
+                "*://outlook.live.com/*",
+                "*://outlook.office.com/*"
+            ],
+            "js": ["content.js"],
+            "css": ["styles.css"],
+            "run_at": "document_idle"
+        }
+    ],
+    "action": {
+        "default_popup": "popup.html",
+        "default_icon": {
+            "16": "icons/icon16.png",
+            "48": "icons/icon48.png",
+            "128": "icons/icon128.png"
+        }
+    },
+    "icons": {
+        "16": "icons/icon16.png",
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
+    }
+}
+```
+
+manifest_version: 3 — Latest Chrome extension standard
+name, version, description, author — Basic metadata for Chrome Web Store
+permissions:
+activeTab — Interact with current tab
+storage — Save scan statistics locally
+host_permissions — Restricts extension to Gmail and Outlook only (principle of least privilege)
+content_scripts:
+matches — Which URLs to run on
+js/css — Files to inject into page
+run_at: document_idle — Run after page loads
+action:
+default_popup — UI when icon clicked
+default_icon — Toolbar icons 
 
 ---
 
