@@ -436,10 +436,6 @@ brandDomains: [
 ]
 ```
 
-**Why these brands?**
-
-These are the most commonly impersonated brands according to Verizon DBIR and Proofpoint State of Phish reports. The detection logic checks if these strings appear in a URL's hostname *without* the URL actually belonging to that brand. This catches typosquatting and subdomain impersonation attacks.
-
 #### Scoring Thresholds
 
 ```javascript
@@ -461,7 +457,7 @@ The thresholds were calibrated to balance detection sensitivity against false po
 
 ### Section 2: analyzeUrl() — The Detection Engine
 
-#### Why Cumulative Scoring?
+#### Cumulative Scoring?
 
 I chose cumulative scoring over binary detection for several reasons:
 
@@ -471,7 +467,7 @@ I chose cumulative scoring over binary detection for several reasons:
 
 #### Detection Checks Breakdown
 
-| Check | Points | Rationale |
+| Check | Points | Reason |
 |-------|--------|-----------|
 | IP address hostname | +5 | Legitimate sites almost never display IP addresses to users |
 | Suspicious keywords | +1 each | Common in phishing but also in legitimate URLs |
@@ -496,16 +492,6 @@ try {
     return result;
 }
 ```
-
-**Why catch parsing errors?**
-
-Malformed URLs that fail JavaScript's URL parser may indicate:
-
-- Encoding tricks
-- Malicious payloads embedded in URL structure
-
-Rather than silently failing, the script treats unparseable URLs as suspicious +2 points and continues with that 
-
 ---
 
 ### Section 3: applyWarningToLink() — Visual Feedback
@@ -569,14 +555,6 @@ function scanAllLinks() {
     chrome.storage.local.set({ scanStats: scanStats });
 }
 ```
-
-**Why these exclusions?**
-
-- **`#` anchors** — Page-internal navigation
-- **`javascript:` URLs** — Execute code
-- **`mailto:` and `tel:`** — Open email clients
-- **Relative paths (`/path`)** — Internal site navigation within Gmail itself
-
 ---
 
 ### Section 5: setupDynamicContentObserver() — Handling Modern Web Apps
@@ -633,7 +611,7 @@ if (document.readyState === 'loading') {
 }
 ```
 
-**Why check document.readyState?**
+**document.readyState?**
 
 Content scripts can be injected at different times depending on the `run_at` setting in manifest.json and browser behavior. This check ensures:
 
